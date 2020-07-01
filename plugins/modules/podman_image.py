@@ -3,6 +3,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+import shlex
 __metaclass__ = type
 
 
@@ -102,6 +103,10 @@ DOCUMENTATION = '''
           description: Remove intermediate containers after a successful build
           type: bool
           default: True
+        extra_args:
+          description:
+            - Extra args to pass to build, if executed. Does not idempotently check for new build args.
+          type: str
     push_args:
       description: Arguments that control pushing images.
       suboptions:
@@ -550,6 +555,10 @@ class PodmanImageManager(object):
             cred_string = '{user}:{password}'.format(user=self.username, password=self.password)
             args.extend(['--creds', cred_string])
 
+        extra_args = self.build.get('extra_args')
+        if extra_args:
+            args.extend([arg for arg in shlex.split(extra_args)])
+
         args.append(self.path)
 
         rc, out, err = self._run(args, ignore_errors=True)
@@ -690,6 +699,7 @@ def main():
                     cache=dict(type='bool', default=True),
                     rm=dict(type='bool', default=True),
                     volume=dict(type='list'),
+                    extra_args=dict(type='str'),
                 ),
             ),
             push_args=dict(
